@@ -7,13 +7,15 @@ import (
 
 // Constants defining bit positions for node ID and sequence number
 const (
-	node = 8  // A bit position for node ID
-	seq  = 30 // Bit position for sequence number
+	node    = 8  // A bit of position for node ID
+	seq     = 30 // Bit position for sequence number
+	maxBase = 1<<25 - 1
+	maxSeq  = 1<<30 - 1
 )
 
 type Uid struct {
 	nodeId uint8         // Identifier for the node (supports up to 256 nodes)[0-255]
-	base   uint32        // Base time in minutes since a reference point
+	base   atomic.Uint32 // Base time in minutes since a reference point
 	nextId atomic.Uint64 // Atomic counter for the next ID to be generated
 }
 
@@ -30,11 +32,15 @@ func NewUid(nodeId uint8, baseTime *time.Time) (u *Uid) {
 
 	if baseTime != nil {
 		// Calculate the base time in minutes since the reference time
-		u.base = uint32(time.Now().Sub(*baseTime).Minutes())
+		base := uint32(time.Now().Sub(*baseTime) / time.Minute)
+		if base > maxBase {
+			base = 0
+		}
+		u.base.Store(base)
 	}
 
 	// Initialize the nextId with the base time and node ID
-	u.nextId.Store(uint64(u.base)<<(node+seq) + uint64(u.nodeId)<<seq)
+	u.nextId.Store(uint64(u.base.Load())<<(node+seq) + uint64(u.nodeId)<<seq)
 	return
 }
 
@@ -45,7 +51,7 @@ func (u *Uid) NodeId() uint8 {
 
 // Base returns the base time of the generator in minutes since the reference time
 func (u *Uid) Base() uint32 {
-	return u.base
+	return u.base.Load()
 }
 
 // CurrentId returns the current value of the ID generator
@@ -55,6 +61,20 @@ func (u *Uid) CurrentId() uint64 {
 
 // Gen generates a new unique ID by incrementing the atomic counter
 func (u *Uid) Gen() uint64 {
-	u.nextId.Add(1)        // Increment the atomic counter
-	return u.nextId.Load() // Return the new unique ID
+	return u.nextId.Add(1) // Increment the atomic counter. Return the new unique ID
+}
+
+// UnsafeGen generates a new unique ID by incrementing the atomic counter
+func (u *Uid) UnsafeGen() uint64 {
+	next := u.nextId.Add(1)
+	if next&maxSeq == 0 {
+		base := u.base.Add(1)
+		if base > maxBase {
+			base = 0
+		}
+		next = uint64(base)<<(node+seq) + uint64(u.nodeId)<<seq
+		u.nextId.Store(next)
+		return next
+	}
+	return next
 }

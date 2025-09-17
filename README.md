@@ -38,6 +38,7 @@ v1:
 * 在分佈式場景下，256個節點可以作為同一業務的生成器，保證高可用。當然也可以分組甚至單點使用。
 * 同一個節點，保證順序。多個節點間，不能保證順序。
 * 同一個節點，一分鐘內只能啟動一個實例，若啟動多個實例，ID會重複。
+* 更建议使用UnsafeGen，实际更安全一些。
 
 The generator supports up to 256 nodes,
 only allows a maximum of 1 instance per minute,
@@ -74,4 +75,8 @@ func main() {
 	}
 }
 
+```
+
+```go
+	id := ug.UnsafeGen()
 ```
