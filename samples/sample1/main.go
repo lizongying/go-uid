@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("Node ID:", ug.NodeId())
 
 	// Print the base time in minutes since the reference time
-	fmt.Println("Base Time (minutes since 2023-01-01 00:00:00 UTC):", ug.Base())
+	fmt.Println("Base Time (minutes since 2025-01-01 00:00:00 UTC):", ug.Base())
 
 	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
