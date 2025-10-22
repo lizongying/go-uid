@@ -36,7 +36,7 @@ func main() {
 
 	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
-		id := ug.Gen() // Generate a new unique ID
+		id := ug.UnsafeGen() // Generate a new unique ID
 		fmt.Println("Generated ID:", id)
 	}
 }

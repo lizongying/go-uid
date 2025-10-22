@@ -21,10 +21,9 @@ v1:
 
 1. 性能要求高
 2. ID需要保持順序
-3. 單點或分佈式
+3. 分佈式
 4. 高可用
 5. 程序再次啟動後，依然保持順序
-6. 可以搭配服務發布或者程序內直接使用
 
 不適用場景:
 
@@ -35,10 +34,10 @@ v1:
 
 v1:
 
-* 在分佈式場景下，256個節點可以作為同一業務的生成器，保證高可用。當然也可以分組甚至單點使用。
-* 同一個節點，保證順序。多個節點間，不能保證順序。
+* 在分佈式場景下，最多支持256個節點。
+* 同一個節點，保證順序。多個節點間，不保證順序。
 * 同一個節點，一分鐘內只能啟動一個實例，若啟動多個實例，ID會重複。
-* 更建议使用UnsafeGen，实际更安全一些。
+* 強烈建议使用UnsafeGen，实际上很安全，但會在生成約10億個ID後，Base+1。
 
 The generator supports up to 256 nodes,
 only allows a maximum of 1 instance per minute,
@@ -63,20 +62,42 @@ package main
 import (
 	"fmt"
 	uidv1 "github.com/lizongying/go-uid/v1"
+	"time"
+)
+
+const (
+	nodeId       = 0
+	baseTimeStr  = "2023-01-01 00:00:00"
+	locationName = "Asia/Shanghai"
 )
 
 func main() {
-	ug := uidv1.NewUid(0, nil)
-	fmt.Println(ug.NodeId())
-	fmt.Println(ug.Base())
+	location, err := time.LoadLocation(locationName)
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+		return
+	}
+
+	baseTime, err := time.ParseInLocation(time.DateTime, baseTimeStr, location)
+	if err != nil {
+		fmt.Println("Error parsing time:", err)
+		return
+	}
+
+	// Create a new Uid generator for node
+	ug := uidv1.NewUid(nodeId, &baseTime)
+
+	// Print the node ID of the generator
+	fmt.Println("Node ID:", ug.NodeId())
+
+	// Print the base time in minutes since the reference time
+	fmt.Println("Base Time (minutes since 2023-01-01 00:00:00 UTC):", ug.Base())
+
+	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
-		id := ug.Gen()
-		fmt.Println(id)
+		id := ug.UnsafeGen() // Generate a new unique ID
+		fmt.Println("Generated ID:", id)
 	}
 }
 
-```
-
-```go
-	id := ug.UnsafeGen()
 ```
