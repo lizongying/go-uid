@@ -8,8 +8,8 @@ import (
 
 const (
 	nodeId       = 0
-	baseTimeStr  = "2023-01-01 00:00:00"
-	locationName = "Asia/Shanghai"
+	baseTimeStr  = "2025-01-01 00:00:00"
+	locationName = "UTC"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 
 	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
-		id := ug.UnsafeGen() // Generate a new unique ID
+		id := ug.Gen() // Generate a new unique ID
 		fmt.Println("Generated ID:", id)
 	}
 }
