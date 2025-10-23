@@ -1,6 +1,6 @@
 # go-uid
 
-分布式UID生成器，基於指定時間（分鐘）遞增
+分布式UID生成器，順序、極速。
 
 [go-uid](https://github.com/lizongying/go-uid)
 ___
