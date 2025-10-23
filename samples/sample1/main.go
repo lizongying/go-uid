@@ -8,7 +8,7 @@ import (
 
 const (
 	nodeId       = 0
-	baseTimeStr  = "2025-01-01 00:00:00"
+	sinceTimeStr = "2025-01-01 00:00:00"
 	locationName = "UTC"
 )
 
@@ -19,14 +19,14 @@ func main() {
 		return
 	}
 
-	baseTime, err := time.ParseInLocation(time.DateTime, baseTimeStr, location)
+	sinceTime, err := time.ParseInLocation(time.DateTime, sinceTimeStr, location)
 	if err != nil {
 		fmt.Println("Error parsing time:", err)
 		return
 	}
 
 	// Create a new Uid generator for node
-	ug := uidv1.NewUid(nodeId, &baseTime)
+	ug, _ := uidv1.NewUid(nodeId, &sinceTime, 16, nil, nil)
 
 	// Print the node ID of the generator
 	fmt.Println("Node ID:", ug.NodeId())
@@ -36,7 +36,7 @@ func main() {
 
 	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
-		id := ug.Gen() // Generate a new unique ID
+		id := ug.NextId() // Generate a new unique ID
 		fmt.Println("Generated ID:", id)
 	}
 }

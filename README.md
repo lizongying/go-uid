@@ -19,15 +19,15 @@ v1:
 
 對比Snowflake：
 
-|            | Snowflake           | go-uid         |    |
-|------------|---------------------|----------------|----|
-| 生成最大數量     | 每毫秒4096，達上限後需等待下一毫秒 | 無限制            | ✔️ |
-| 生成速度       | 快                   | 極快             | ✔️ |
-| Node節點數量   | 10 bit → 1024 節點    | 8 bit → 256 節點 | ❌️ |
-| ID是否反應生成時間 | 是                   | 否（只反應初始時間）     | ❌  |
-| 單節點順序性     | 良好，但受毫秒 sequence 限制 | 完全順序           | ✔️ |
-| 多節點順序性     | 良好，但受毫秒 sequence 限制 | 差              | ❌️ |
-| 時間回撥問題     | 有                   | 無              | ✔️ |
+|            | Snowflake           | go-uid     |    |
+|------------|---------------------|------------|----|
+| 生成最大數量     | 每毫秒4096，達上限後需等待下一毫秒 | 幾乎無限制      | ✔️ |
+| 生成速度       | 快                   | 極快         | ✔️ |
+| Node節點數量   | 1024 節點             | 65536 節點   | ✔️ |
+| ID是否反應生成時間 | 是                   | 否（只反應初始時間） | ❌  |
+| 單節點順序性     | 良好，但受毫秒 sequence 限制 | 完全順序       | ✔️ |
+| 多節點順序性     | 良好，但受毫秒 sequence 限制 | 差          | ❌️ |
+| 時間回撥問題     | 有                   | 無          | ✔️ |
 
 適用場景:
 
@@ -44,15 +44,25 @@ v1:
 
 v1:
 
-- 如果 baseTime 為 nil，則默認使用 2025-01-01 00:00:00 UTC。
-- baseTime 不得早於上次生成器使用的時間，以避免回撥導致 ID 重複。
-- 如需允許回撥，請手動刪除臨時文件：/tmp/base_minute_{nodeId}.bin
-- 最多支持256個節點。
+- 32 >= nodeBits >= 6
+- 如果 sinceTime 為 nil，則默認使用 2025-01-01 00:00:00 UTC。
+- sinceTime 不得早於上次生成器使用的時間，避免回撥導致 ID 重複。
+- 如需允許回撥，請手動在存儲中刪除。
 - 同一節點，保證順序。多節點，不保證順序。
+- 為了防止一分鐘內重啟ID重複問題，默認使用了StoreLocal。
+- 為了防止nodeId轉移問題，可以使用StoreEtcd，也可以自己實現。
+- 儘管生成數量幾乎無限制，但在默認配置下建議一分鐘內生成數量不要超過400萬，可以調整nodeBits來優化。
+
+    - | nodeBits | 節點數量 | 建議單節點每分鐘最大生成數量 |
+                  |----------|------------|----------------|
+      | 6 | 64 | 4294967296     |
+      | 8 | 256 | 1073741824     |
+      | 16 | 65536 | 4194304        |
+      | 32 | 4294967296 | 64             |
 
 ```
-  1  |25 base minute            |  |8 node|  |30 seq
-  0--00000000-00000000-00000000-0--00000000--00000000-00000000-00000000-000000
+  1  |25 base minute            |  |16 node        |  |22 seq
+  0--00000000-00000000-00000000-0--00000000-00000000--00000000-00000000-000000
 
 ```
 
@@ -67,6 +77,11 @@ go get -u github.com/lizongying/go-uid
 [samples](samples)
 
 ```go
+ug := uidv1.Default(nodeId)
+id := ug.NextId()
+```
+
+```go
 package main
 
 import (
@@ -77,7 +92,7 @@ import (
 
 const (
 	nodeId       = 0
-	baseTimeStr  = "2025-01-01 00:00:00"
+	sinceTimeStr = "2025-01-01 00:00:00"
 	locationName = "UTC"
 )
 
@@ -88,14 +103,14 @@ func main() {
 		return
 	}
 
-	baseTime, err := time.ParseInLocation(time.DateTime, baseTimeStr, location)
+	sinceTime, err := time.ParseInLocation(time.DateTime, sinceTimeStr, location)
 	if err != nil {
 		fmt.Println("Error parsing time:", err)
 		return
 	}
 
 	// Create a new Uid generator for node
-	ug := uidv1.NewUid(nodeId, &baseTime)
+	ug, _ := uidv1.NewUid(nodeId, &sinceTime, 16, nil, nil)
 
 	// Print the node ID of the generator
 	fmt.Println("Node ID:", ug.NodeId())
@@ -105,7 +120,7 @@ func main() {
 
 	// Generate and print 10 unique IDs
 	for i := 0; i < 10; i++ {
-		id := ug.Gen() // Generate a new unique ID
+		id := ug.NextId() // Generate a new unique ID
 		fmt.Println("Generated ID:", id)
 	}
 }
