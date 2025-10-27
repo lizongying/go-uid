@@ -77,7 +77,17 @@ go get -u github.com/lizongying/go-uid
 [samples](samples)
 
 ```go
-ug := uidv1.Default(nodeId)
+// If the node ID is fixed and does not change, use NewUidLocal for simplicity and no external dependency.
+// Otherwise, use NewUidEtcd with endpoints to coordinate node IDs dynamically across distributed nodes.
+// For more advanced or customized requirements, use NewUid to manually configure the UID generator.
+ug, _ := uidv1.NewUidLocal(nil, 0, nodeId)
+id := ug.NextId()
+```
+
+```go
+// Example for distributed ID allocation via etcd:
+var endpoints []string
+ug, _ := uidv1.NewUidEtcd(nil, 0, endpoints)
 id := ug.NextId()
 ```
 
@@ -110,7 +120,7 @@ func main() {
 	}
 
 	// Create a new Uid generator for node
-	ug, _ := uidv1.NewUid(nodeId, &sinceTime, 16, nil, nil)
+	ug, _ := uidv1.NewUidLocal(&sinceTime, 16, nodeId)
 
 	// Print the node ID of the generator
 	fmt.Println("Node ID:", ug.NodeId())

@@ -33,7 +33,7 @@ func NewUid(nodeId uint32) (u *Uid) {
 	return
 }
 
-func (u *Uid) Gen() (str string) {
+func (u *Uid) NextId() (str string) {
 	uuidValue, err := uuid.NewV6()
 	if err != nil {
 		return

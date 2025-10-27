@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Create a new Uid generator for node
-	ug, _ := uidv1.NewUid(nodeId, &sinceTime, 16, nil, nil)
+	ug, _ := uidv1.NewUidLocal(&sinceTime, 16, nodeId)
 
 	// Print the node ID of the generator
 	fmt.Println("Node ID:", ug.NodeId())
